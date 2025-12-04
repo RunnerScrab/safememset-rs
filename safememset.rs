@@ -97,18 +97,10 @@ fn main() {
 
     let needle: &[u8] = &[0x4c, 0x89, 0xf7, 0x31, 0xf6, 0x48, 0x89, 0xda, 0xff, 0x15];
 
-    /* The data in `needle` is the start of the PLT stub to CRT memset() in the x86_64 ELF rustc compiles
-     * this program to on my Linux machine. It is not shellcode, but code inserted by
-     * rustc for the rust standard library which calls memset which we will look for.
-     * We don't care about that code, but its CALL instruction's operand can be used to find the PLT stub.
-     *
-     * 0xff 0x15 is the start of a x86_64 CALL opcode. The next 4 bytes are the offset to
-     * memcpy's PLT entry (little endian) as encoded by CALL, relative to the instruction
-     * after it.
-     *
-     * The PLT entry itself contains the address of memset in the program's virtual address
-     * space (again in little endian), which we can freely call ourselves without using
-     * any unsafe code.
+    /* The data in `needle` is not shellcode, but is inserted by
+     * rustc for some rust standard library PLT stub it uses to call memset, and we look for it.
+     * Once there, we can look at its CALL instruction's operand, which is an offset that can be used to find the
+     * actual address memset is mapped to in our program's virtual address space
      *
      * This technique should work for any function imported by the rust stdlib, though
      * will need adjustment depending on where the stub is relative to main, which
