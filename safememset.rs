@@ -132,9 +132,9 @@ fn main() {
         });
 
         //The 4-byte offset encoded in the CALL opcode is relative to the next instruction's address
-        let next_op_addr: usize = mainaddr as usize + plt_offset_offset + 4;
-        let call_addr_operand_addr: usize = offset as usize + next_op_addr as usize;
-        let plt_entry_addr = transmute::<usize, &[u8; 8]>(call_addr_operand_addr as usize);
+        let next_op_addr: usize = mainaddr + plt_offset_offset + 4;
+        let call_addr_operand_addr: usize = offset as usize + next_op_addr;
+        let plt_entry_addr = transmute::<usize, &[u8; 8]>(call_addr_operand_addr);
         let target_be: usize = usize::from_le_bytes(*plt_entry_addr);
 
         let safe_memset = transmute::<usize, extern "C" fn(u64, i32, usize)>(target_be);
