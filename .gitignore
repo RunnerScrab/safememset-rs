@@ -1,5 +1,7 @@
 safeglibc
 sc.bin
 win.bin
+*~
+*.pdb
 *.o
 *.exe

@@ -2,35 +2,47 @@
 default rel
 section .text
 push rbx
+push rdi
+push rsi
 push r12
 push r13
+push r14
+push r15
 push rbp
 mov rbp, rsp
+and rsp, -10h
+sub rsp, 20h
 
 xor rbx, rbx
 
 mov [.WriteConsoleA], rcx
 mov [.hStdOut], rdx
 
-.loop:
+
     ;rcx, rdx, r8, r9
 
     lea rcx, [.border]
+
     call .strlen
     lea rcx, [.border]
     mov rdx, rax
+
     call .printrgbstring
 
     lea rcx, [.message]
+
     call .strlen
     lea rcx, [.message]
     mov rdx, rax
+
     call .printrgbstring
 
     lea rcx, [.border]
+	
     call .strlen
     lea rcx, [.border]
     mov rdx, rax
+
     call .printrgbstring
 
     call .printnl
@@ -38,13 +50,18 @@ mov [.hStdOut], rdx
     
 	add rbx, 1
     cmp rbx, 255
-	
+
 	call .printansireset
+mov rax, 0FEEDCAFEBABEBEEFh
 	
 mov rsp, rbp
 pop rbp
+pop r15
+pop r14
 pop r13
 pop r12
+pop rsi
+pop rdi
 pop rbx
 ret
 
@@ -54,6 +71,11 @@ ret
 	push r13
 	push r14
 	push r15
+	push rbp
+	mov rbp, rsp
+	
+	and rsp, -10h
+	sub rsp, 20h
 	
 	mov r10, rcx ; r10 = string pointer
 	mov r11, rdx ; r11 = string length
@@ -63,6 +85,7 @@ ret
 ._printrgbstrloop:
 	mov rdx, r13
 	mov rcx, r14
+
 	call .hsv_to_rgb
 
 	mov rdx, rax ;  red
@@ -82,7 +105,8 @@ ret
 
 	
 	push r10
-	push r11	
+	push r11
+
 	call .printcolorchar
 	pop r11
 	pop r10
@@ -96,6 +120,8 @@ ret
 	xor r13, r13 ; r13 = 0 (reset step)
 	jmp ._printrgbstrloop	
 ._printrgbstrloopend:
+	mov rsp, rbp
+	pop rbp
 	pop r15
 	pop r14
 	pop r13
@@ -111,7 +137,10 @@ ret
 	push r15
 	push rbp
 	mov rbp, rsp
-
+	
+	and rsp, -10h
+	sub rsp, 20h
+	
 	mov r12, rcx
 	mov r13, rdx
 	mov r14, r8
@@ -122,30 +151,38 @@ ret
 
 	mov rdx, 07h
 	lea rcx, [.ansicode1]
+
 	call .printstr
 
 	mov rcx, r13 ; red
+
 	call .printnum
 
 	mov rdx, 1
 	lea rcx, [.ansicode34]
+
 	call .printstr
 
 	mov rcx, r14 ; green
+	
 	call .printnum
 
 	mov rdx, 1
 	lea rcx, [.ansicode34]
+	
 	call .printstr
 
 	mov rcx, r15 ; blue
+
 	call .printnum
 
 	mov rdx, 1
 	lea rcx, [.ansicode5]
+
 	call .printstr
 
 	mov rcx, r12
+
 	call .printchar
 
 	mov rsp, rbp
@@ -203,14 +240,17 @@ ret
 	push r12
 	push rbp
 	mov rbp, rsp
-	sub rsp, 32
+	and rsp, -10h
+	sub rsp, 20h
 
 	lea rdx, [rbp - 1]
+
 	call .itoa
 
 	lea rdx, [rbp]
 	sub rdx, rax
 	mov rcx, rax
+	
 	call .printstr
 
 	mov rsp, rbp
@@ -221,11 +261,13 @@ ret
 	push r12
 	push rbp
 	mov rbp, rsp
-	sub rsp, 16
+	and rsp, -10h
+	sub rsp, 20h	
 
 	mov [rbp - 8], cl
 	lea rcx, [rbp - 8]
 	mov rdx, 1
+	
 	call .printstr
 
 	mov rsp, rbp
@@ -235,8 +277,12 @@ ret
 .printnl:
 	push rbp
 	mov rbp, rsp
+	and rsp, -10h
+	sub rsp, 20h
+	
 	lea rcx, [.crnl]
 	mov rdx, 2
+	
 	call .printstr
 	mov rsp, rbp
 	pop rbp
@@ -247,7 +293,9 @@ ret
     push r14
     push rbp
     mov rbp, rsp
-
+    and rsp, -10h ; Align stack to 16 bytes
+    sub rsp, 20h  ; Reserve shadow space on stack
+	
     lea r12, [.WriteConsoleA]
 
     mov r8, rdx
@@ -257,8 +305,6 @@ ret
     xor r9, r9
     push qword 0
 
-    and rsp, -16 ; Align stack to 16 bytes
-    sub rsp, 32  ; Reserve shadow space on stack
     call [r12]
 
     mov rsp, rbp
@@ -268,9 +314,17 @@ ret
     pop r12
 ret
 .printansireset:
+	push rbp
+	mov rbp, rsp
+    and rsp, -10h ; Align stack to 16 bytes
+    sub rsp, 20h  ; Reserve shadow space on stack
+	
 	lea rcx, [.ansireset]
 	mov rdx, 4
 	call .printstr
+	
+	mov rsp, rbp
+	pop rbp
 	ret
 ; Floating point modulus
 .flmod:
@@ -284,9 +338,15 @@ ret
 	ret
 	; Map a channel of hsv to R, G, or B
 .hsvf: ; xmm0 return, xmm0 n, xmm1 h
+	push rbp
+	mov rbp, rsp
+	and rsp, -10h
+	sub rsp, 20h	
+
 	addss xmm0, xmm1
 	mov eax, 40c00000h
 	movd xmm1, eax
+
 	call .flmod
 
 	mov edx, 40800000h
@@ -307,6 +367,9 @@ ret
 	mov esi, 437f0000h
 	movd xmm3, esi
 	mulss xmm0, xmm3
+	
+	mov rsp, rbp
+	pop rbp
 	ret
 ._label1:
 	comiss xmm0, xmm1
@@ -321,6 +384,9 @@ ret
 ._label6:
 	mov eax, 437f0000h
 	movd xmm0, eax
+	
+	mov rsp, rbp
+	pop rbp	
 	ret
 ._label2:
 	pxor xmm1, xmm1
@@ -333,7 +399,9 @@ ret
 .hsv_to_rgb: ; eax return, edi max_steps, esi step
 	push rbp
 	mov rbp, rsp
+	and rsp, -10h
 	sub rsp, 20h
+	
 	mov edi, ecx
 	mov esi, edx
 
@@ -368,6 +436,7 @@ ret
 	movaps xmm1, xmm0
 
 	movd xmm0, esi
+
 	call .hsvf
 
 	mov ecx, 40400000h ; 3.f
@@ -381,6 +450,7 @@ ret
 	movaps xmm1, xmm0
 
 	movd xmm0, ecx
+
 	call .hsvf
 	cvttss2si edi, xmm0
 	movzx edx, dil
@@ -393,6 +463,7 @@ ret
 	movss xmm0, [rbp - 10h]
 	movaps xmm1, xmm0
 	movd xmm0, eax
+
 	call .hsvf
 
 	cvttss2si esi, xmm0
