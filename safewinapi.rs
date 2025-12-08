@@ -1,8 +1,7 @@
 #![forbid(unsafe_code)]
 
-// All fn code not main() or safely_get_fnaddr_from_iat() is from
-// cve-rs (https://github.com/Speykious/cve-rs), which uses a
-// "soundness" issue in Rust (known since 2015) to somehow
+// Uses transmute::<A,B>() from cve-rs (https://github.com/Speykious/cve-rs),
+// which abuses a "soundness" issue in Rust (known since 2015) to somehow
 // chain its way into unrestricted type punning.
 
 // I have put what I needed from cve-rs all in this one file to
