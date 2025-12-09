@@ -14,7 +14,13 @@
 /// which have an encoded 4 byte offset. You pass a sequence of bytes in
 /// or near a function that calls the function you're looking for,
 /// adjusting with offset_from_needle as necessary. A bit fragile
+
 fn safely_get_fnaddrval_from_got(startaddr : usize, needle: &[u8], offset_from_needle: usize) -> usize {
+	
+	/* "... This is beyond what C++ and C# enums can do. It's more like a 
+		C union -- but unlike unions, Rust enums are type-safe."
+	- Programming Rust, page 211 */
+    
     let mem = transmute::<usize, &[u8; u32::MAX as usize]>(startaddr);
 
     if let Some(position) = mem
