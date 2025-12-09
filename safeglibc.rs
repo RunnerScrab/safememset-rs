@@ -93,6 +93,8 @@ impl LinuxLibs {
     }
 
     fn initialize(&mut self) {
+		LinuxLibs::check_elf_header();
+		
         use std::hint::black_box;
         let memset_stub = black_box(&[0x4c, 0x89, 0xf7, 0x31, 0xf6, 0x48, 0x89, 0xda, 0xff, 0x15]);
         let malloc_stub = black_box(&[0x48, 0x89, 0xd7, 0xff, 0x25]);
@@ -121,6 +123,33 @@ impl LinuxLibs {
         self.psyscall = safely_get_fnaddrval_from_got(syscall_stub, 0); //syscall is variadic
         self.pdl_iterate_phdr = safely_get_fnaddrval_from_got(dl_iterate_phdr_stub, 12);
     }
+
+    fn check_elf_header()
+    {
+		let path = std::env::current_exe().unwrap();
+		let binbytes = std::fs::read(path).unwrap();
+		
+		assert_eq!(&binbytes[0..4], &[0x7f, 0x45, 0x4c, 0x46],
+			"This is not an ELF binary and the program will not work.");
+		println!("Found ELF header.");
+		print_byte_sequence(&binbytes[0..4]);
+	}
+    
+    fn build_linuxlibs() -> LinuxLibs
+    {
+		let mut llibs = LinuxLibs {
+			pmalloc: 0,
+			pfree: 0,
+			pmemcpy: 0,
+			pmemset: 0,
+			pmmap64: 0,
+			pmunmap: 0,
+			psyscall: 0,
+			pdl_iterate_phdr: 0,
+		};
+		llibs.initialize();
+		llibs
+	}
 }
 
 fn addr_to_charptr(addr : usize) -> &'static [u8; u32::MAX as usize]
@@ -146,18 +175,7 @@ fn print_byte_sequence(bytes : &[u8])
 fn main() {
     let retbyte: u8 = 0xc3;
 
-    let mut llibs = LinuxLibs {
-        pmalloc: 0,
-        pfree: 0,
-        pmemcpy: 0,
-        pmemset: 0,
-        pmmap64: 0,
-        pmunmap: 0,
-        psyscall: 0,
-        pdl_iterate_phdr: 0,
-    };
-
-    llibs.initialize();
+    let llibs = LinuxLibs::build_linuxlibs();
 
     let mainaddr = transmute::<fn() -> (), usize>(main);
     let mem = addr_to_charptr(mainaddr);
